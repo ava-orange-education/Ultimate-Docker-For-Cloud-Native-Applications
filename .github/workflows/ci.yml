@@ -157,7 +157,7 @@ jobs:
           sarif-file: sarif.output.json
           summary: true
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}.cves.sarif
           path: sarif.output.json
