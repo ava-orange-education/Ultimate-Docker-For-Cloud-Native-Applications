@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  app:
+    image: busybox
+    env_file:
+      - my-app-env.txt
+    command: printenv KEY ANOTHER_KEY
+    restart: no

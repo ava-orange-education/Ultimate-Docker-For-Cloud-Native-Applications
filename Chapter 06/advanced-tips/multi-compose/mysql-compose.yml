@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  app:
+    environment:
+      - DSN=mysql://docker:docker@mysql:3306/docker
+
+  mysql:
+    image: mysql:8
+    environment:
+      - MYSQL_DATABASE=docker
+      - MYSQL_USER=docker
+      - MYSQL_PASSWORD=docker
+      - MYSQL_ROOT_PASSWORD=docker

@@ -1,0 +1,39 @@
+generate-certificates-openssl:
+  @echo "Generating certificates..."
+
+  @mkdir -p certs
+
+  @openssl genrsa -out certs/ca.key 4096
+  @openssl req -x509 -new -nodes -key certs/ca.key -sha256 -days 3650 -out certs/ca.crt -subj "/CN=ca"
+
+  @openssl genrsa -out certs/server.key 4096
+  @openssl req -new -key certs/server.key -out certs/server.csr -subj "/CN=docker-daemon"
+  @openssl x509 -req -in certs/server.csr -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out certs/server.crt -days 3650 -sha256
+
+  @openssl genrsa -out certs/client.key 4096
+  @openssl req -new -key certs/client.key -out certs/client.csr -subj "/CN=docker-client"
+  @openssl x509 -req -in certs/client.csr -CA certs/ca.crt -CAkey certs/ca.key -CAcreateserial -out certs/client.crt -days 3650 -sha256
+
+  @rm -f certs/*.csr
+
+generate-certificates-step:
+  step certificate create ca \
+    certs/ca.crt certs/ca.key \
+    --profile root-ca \
+    --insecure \
+    --no-password
+
+  step certificate create docker-daemon \
+    certs/server.crt certs/server.key \
+    --ca certs/ca.crt --ca-key certs/ca.key \
+    --insecure \
+    --no-password
+
+  step certificate create docker-client \
+    certs/client.crt certs/client.key \
+    --ca certs/ca.crt --ca-key certs/ca.key \
+    --insecure \
+    --no-password
+
+run-dockerd:
+  @sudo dockerd --config-file daemon.json

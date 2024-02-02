@@ -1,0 +1,9 @@
+FROM python:3.11-alpine
+
+WORKDIR /app
+
+RUN pip install -U pip 'celery<6' 'redis<6' 'httpx<1'
+
+COPY *.py ./
+
+CMD ["celery", "-A", "tasks:app", "worker", "--loglevel=info"]

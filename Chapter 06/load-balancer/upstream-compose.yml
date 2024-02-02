@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  nginx1:
+    healthcheck:
+      interval: 5s
+      retries: 3
+      start_interval: 5s
+      start_period: 5s
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      timeout: 1s
+    image: nginx:1-alpine
+    pull_policy: missing
+    read_only: true
+    restart: unless-stopped
+    volumes:
+      - ./nginx1:/usr/share/nginx/html/:ro
+      - /var/cache/nginx
+      - /var/run/
+
+  nginx2:
+    healthcheck:
+      interval: 5s
+      retries: 3
+      start_interval: 5s
+      start_period: 5s
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      timeout: 1s
+    image: nginx:1-alpine
+    read_only: true
+    restart: unless-stopped
+    volumes:
+      - ./nginx2:/usr/share/nginx/html/:ro
+      - /var/cache/nginx
+      - /var/run/
+
+configs:
+  nginx1.conf:
+    file: ./nginx1/nginx.conf
+  nginx2.conf:
+    file: ./nginx2/nginx.conf

@@ -1,0 +1,59 @@
+version: "3.9"
+
+include:
+  - ./upstream-compose.yml
+
+services:
+  haproxy:
+    cap_drop:
+      - ALL
+    command: ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+    configs:
+      - gid: haproxy
+        mode: 0440
+        source: haproxy.cfg
+        target: /usr/local/etc/haproxy/haproxy.cfg
+        uid: haproxy
+    cpu_count: 2
+    depends_on:
+      nginx1:
+        condition: service_healthy
+        required: false
+      nginx2:
+        condition: service_healthy
+        required: false
+    environment:
+      - TZ=UTC
+    healthcheck:
+      interval: 60s
+      retries: 3
+      start_interval: 1s
+      start_period: 1s
+      test: ["CMD", "haproxy", "-c", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
+      timeout: 1s
+    image: haproxy:2.8
+    ports:
+      - "8080:80"
+      - "8443:443"
+    read_only: true
+    restart: unless-stopped
+    secrets:
+      - gid: haproxy
+        mode: 0440
+        source: haproxy-certs
+        target: /usr/local/etc/haproxy/certs/
+        uid: haproxy
+    sysctls:
+      - net.ipv4.ip_unprivileged_port_start=0
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+
+configs:
+  haproxy.cfg:
+    file: ./haproxy/haproxy.cfg
+
+secrets:
+  haproxy-certs:
+    file: ./haproxy/certs/

@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  app:
+    image: busybox
+    command: sh -c 'mount | grep /app/data && df -h /app/data'
+    restart: no
+    volumes:
+      - app-volume:/app/data
+
+volumes:
+  app-volume:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=100m,uid=1000

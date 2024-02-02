@@ -1,0 +1,10 @@
+services:
+  dind:
+    image: docker:dind-rootless
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: ""
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 2377:2375

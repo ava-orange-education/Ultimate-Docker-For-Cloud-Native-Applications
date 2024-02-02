@@ -1,0 +1,9 @@
+{
+  "tls": true,
+  "tlscacert": "./certs/ca.crt",
+  "tlscert": "./certs/server.crt",
+  "tlskey": "./certs/server.key",
+  "pidfile": "/tmp/docker.pid",
+  "data-root": "/tmp/docker",
+  "hosts": ["tcp://0.0.0.0:10000", "unix:///tmp/docker.sock"]
+}

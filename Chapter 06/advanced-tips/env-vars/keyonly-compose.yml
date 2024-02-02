@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  app:
+    image: busybox
+    environment:
+      - KEY
+    command: printenv KEY
+    restart: no

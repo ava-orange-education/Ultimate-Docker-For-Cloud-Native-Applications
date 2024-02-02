@@ -1,0 +1,58 @@
+version: "3.9"
+
+services:
+  db:
+    image: mysql:8
+    volumes:
+      - db_data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_ROOT_PASSWORD: wordpress
+      MYSQL_PASSWORD: wordpress
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 2s
+      retries: 5
+      start_period: 3s
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+
+  wordpress:
+    depends_on:
+      - db
+    # image: wordpress:6
+    image: ghcr.io/licenseware/monolith-backend:v0.14.2
+    ports:
+      - "80"
+    volumes:
+      - /var/www/html/
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+    deploy:
+      replicas: 3
+      placement:
+        preferences:
+          - spread: node
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 10
+        window: 30s
+      rollback_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: pause
+        monitor: 5s
+        max_failure_ratio: 0.3
+        order: start-first
+
+volumes:
+  db_data:

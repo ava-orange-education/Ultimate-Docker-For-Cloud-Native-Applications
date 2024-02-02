@@ -1,0 +1,29 @@
+services:
+  app:
+    command:
+      - printenv
+      - DSN
+    environment:
+      DSN: postgres://docker:docker@postgres:5432/docker?sslmode=disable
+    image: busybox
+    restart: "no"
+    profiles:
+      - mysql
+      - postgres
+  mysql:
+    environment:
+      MYSQL_DATABASE: docker
+      MYSQL_PASSWORD: docker
+      MYSQL_ROOT_PASSWORD: docker
+      MYSQL_USER: docker
+    image: mysql:8
+    profiles:
+      - mysql
+  postgres:
+    environment:
+      POSTGRES_DB: docker
+      POSTGRES_PASSWORD: docker
+      POSTGRES_USER: docker
+    image: postgres:16
+    profiles:
+      - postgres

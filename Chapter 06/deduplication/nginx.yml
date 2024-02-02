@@ -1,0 +1,15 @@
+services:
+  nginx:
+    healthcheck:
+      interval: 5s
+      retries: 3
+      start_interval: 5s
+      start_period: 5s
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      timeout: 1s
+    image: nginx:1-alpine
+    read_only: true
+    restart: unless-stopped
+    volumes:
+      - /var/cache/nginx
+      - /var/run/

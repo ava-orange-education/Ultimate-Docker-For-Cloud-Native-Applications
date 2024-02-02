@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  app:
+    environment:
+      - DSN=postgres://docker:docker@postgres:5432/docker?sslmode=disable
+
+  postgres:
+    image: postgres:15
+    environment:
+      - POSTGRES_PASSWORD=docker
+      - POSTGRES_USER=docker
+      - POSTGRES_DB=docker

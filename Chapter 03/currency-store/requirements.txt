@@ -1,0 +1,8 @@
+asgiref~=3.7
+celery~=5.3
+fastapi~=0.100
+honcho~=1.1
+httpx<1
+pydantic<2
+redis<5
+uvicorn<1

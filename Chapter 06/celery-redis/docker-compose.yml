@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  worker:
+    build:
+      context: app
+      dockerfile: ../docker/Dockerfile.dev
+    image: worker
+    pull_policy: build
+    volumes:
+      - "./app:/app:ro"
+    healthcheck:
+      test: ["CMD", "sh", "-c", "celery -A tasks:app status"]
+      interval: 30s
+      timeout: 3s
+      retries: 5
+      start_period: 1s
+    cap_drop:
+      - ALL
+    # the order matters in the following env_file list if there are dependencies
+    env_file:
+      - .env.redis
+      - .env.worker
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DSN=mongodb+srv://demo:SuperSecretPassword@frankfurt.abcdefg.mongodb.net/?retryWrites=true&w=majority
+    networks:
+      - worker
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    command: /entrypoint/start-server.sh
+    env_file:
+      - .env.redis
+    volumes:
+      - "./redis:/entrypoint/:ro"
+    networks:
+      - worker
+    # redis is exposed in a private network
+    ports:
+      - "192.168.110.100:6379:6379"
+
+networks:
+  worker:
+    driver: bridge

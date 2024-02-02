@@ -1,0 +1,16 @@
+services:
+  watcher:
+    build: ./app
+    command: sh -c "watch -n 1 'ls -l /watch'"
+    volumes:
+      - /watch
+    develop:
+      watch:
+        - action: sync
+          path: ./src
+          target: /watch
+        - action: rebuild
+          path: ./another/path
+          target: /rebuild
+          ignore:
+            - dont/watch/this

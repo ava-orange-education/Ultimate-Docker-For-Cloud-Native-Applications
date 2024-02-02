@@ -1,0 +1,57 @@
+version: "3.9"
+
+x-common: &common
+  image: docker:24
+  pull_policy: missing
+  read_only: true
+
+x-swarm-common: &swarm-common
+  command:
+    - dockerd
+    - "--host"
+    - tcp://0.0.0.0:2375
+    - "--tls=false"
+    - "-H"
+    - unix:///var/run/docker.sock
+  healthcheck:
+    interval: 3s
+    retries: 3
+    start_interval: 1s
+    start_period: 1s
+    test:
+      - CMD
+      - docker
+      - info
+    timeout: 1s
+  privileged: true
+  volumes:
+    - /var/lib/docker
+    - /var/run/
+
+services:
+  bootstrap:
+    <<: *common
+    command:
+      - sh
+      - "-c"
+      - |
+        docker -H tcp://manager:2375 swarm init
+        docker -H tcp://manager:2375 swarm join-token worker -q > /swarm-data/worker-token
+
+        docker -H tcp://worker:2375 swarm join --token $(cat /swarm-data/worker-token) manager:2377
+    depends_on:
+      manager:
+        condition: service_healthy
+      worker:
+        condition: service_healthy
+    restart: on-failure
+    volumes:
+      - /swarm-data
+
+  manager:
+    <<: [*common, *swarm-common]
+    hostname: manager
+
+  worker:
+    <<: [*common, *swarm-common]
+    hostname: worker

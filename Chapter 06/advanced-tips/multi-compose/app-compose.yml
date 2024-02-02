@@ -1,0 +1,7 @@
+version: "3.9"
+
+services:
+  app:
+    image: busybox
+    command: printenv DSN
+    restart: no

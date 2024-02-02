@@ -1,0 +1,170 @@
+name: ci
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: 0 0 * * *
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  chapter9-multiplatform:
+    env:
+      IMAGE_NAME: meysam81/mastering-docker-chapter9-multiplatform
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+      - id: meta
+        name: Docker meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+      - id: sha
+        name: Calculate short SHA
+        run: echo "sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          context: chapter9/multi-platform
+          labels: ${{ secrets.DOCKERHUB_TOKEN }}0
+          platforms: linux/amd64,linux/arm64,darwin/amd64,darwin/arm64
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.sha.outputs.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.sha.outputs.sha }}
+            ghcr.io/${{ env.IMAGE_NAME }}:latest
+
+  chapter9-nginx:
+    env:
+      IMAGE_NAME: meysam81/mastering-docker-chapter9-nginx
+    if: github.ref == 'refs/heads/main' || github.event_name == 'pull_request'
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+      - id: meta
+        name: Docker meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+      - id: sha
+        name: Calculate short SHA
+        run: echo "sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+      - name: Build and push
+        id: build-push
+        uses: docker/build-push-action@v5
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          context: chapter9/github-actions
+          labels: ${{ steps.meta.outputs.labels }}
+          push: ${{ github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ steps.sha.outputs.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ env.IMAGE_NAME }}:${{ steps.sha.outputs.sha }}
+            ghcr.io/${{ env.IMAGE_NAME }}:latest
+
+  image-scan:
+    env:
+      IMAGE_TAG: latest
+    permissions:
+      pull-requests: write
+      security-events: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: ghcr.io/meysam81/mastering-docker-chapter9-nginx
+            artifact: mastering-docker-chapter9-nginx
+          - image: ghcr.io/meysam81/mastering-docker-chapter9-multiplatform
+            artifact: mastering-docker-chapter9-multiplatform
+    steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+      - id: docker-scout
+        name: Docker Scout
+        uses: docker/scout-action@v1
+        with:
+          command: compare
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ignore-unchanged: true
+          image: ${{ matrix.image }}:${{ env.IMAGE_TAG }}
+          only-severities: critical,high
+          write-comment: ${{ github.event_name == 'pull_request' }}
+      - id: docker-scout-cves
+        name: Analyze for critical and high CVEs
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: ${{ matrix.image }}:${{ env.IMAGE_TAG }}
+          sarif-file: sarif.output.json
+          summary: true
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact }}.cves.sarif
+          path: sarif.output.json
+          if-no-files-found: warn
+      - id: upload-sarif
+        if: ${{ github.ref == 'refs/heads/main' }}
+        name: Upload SARIF result
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: sarif.output.json

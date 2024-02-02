@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  app:
+    image: busybox
+    command:
+      - sh
+      - -c
+      - |
+        ls -lh /app/data
+        touch /app/data/file1.txt
+        ls -lh /app/data
+    restart: no
+    volumes:
+      - app-volume:/app/data
+
+volumes:
+  app-volume:
+    external: true

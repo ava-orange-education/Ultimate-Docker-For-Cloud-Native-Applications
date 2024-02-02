@@ -1,0 +1,35 @@
+version: "3.9"
+
+services:
+  app1:
+    image: busybox
+    command:
+      - sh
+      - -c
+      - |
+        sleep 1
+        touch /app/data/file1.txt
+        ls -lh /app/data
+    restart: no
+    volumes:
+      - app-volume:/app/data
+
+  app2:
+    image: busybox
+    command:
+      - sh
+      - -c
+      - |
+        while [ ! -f /app/data/file1.txt ]; do
+          echo "Waiting for file1.txt to be created..."
+          sleep 1;
+        done;
+
+        touch /app/data/file2.txt
+        ls -lh /app/data
+    restart: no
+    volumes:
+      - app-volume:/app/data
+
+volumes:
+  app-volume:

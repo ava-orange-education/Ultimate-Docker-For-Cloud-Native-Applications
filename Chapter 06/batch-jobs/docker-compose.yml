@@ -1,0 +1,23 @@
+version: "3.9"
+
+services:
+  batch:
+    build: processing
+    init: true
+    restart: on-failure
+    environment:
+      - DATA_DIR=/data
+      - NUM_SIMULATIONS=10000
+    volumes:
+      - /data
+
+  aggregator:
+    image: alpine
+    working_dir: /app
+    init: true
+    restart: unless-stopped
+    volumes_from:
+      - batch:ro
+    volumes:
+      - ./aggregator:/app:ro
+    command: ./entrypoint.sh

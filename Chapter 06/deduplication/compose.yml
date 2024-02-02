@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  nginx1:
+    extends:
+      file: nginx.yml
+      service: nginx
+    pull_policy: missing
+
+  nginx2:
+    extends:
+      file: nginx.yml
+      service: nginx
