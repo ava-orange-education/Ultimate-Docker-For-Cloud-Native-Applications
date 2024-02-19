@@ -165,6 +165,6 @@ jobs:
       - id: upload-sarif
         if: ${{ github.ref == 'refs/heads/main' }}
         name: Upload SARIF result
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: sarif.output.json
